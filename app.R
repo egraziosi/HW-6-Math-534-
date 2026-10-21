@@ -1,38 +1,35 @@
-library(macleish)
-library(ggplot2)
-library(shiny)
+
 library(shiny)
 library(ggplot2)
-library(macleish)
+library(palmerpenguins)
 
 ui <- fluidPage(
   
-  titlePanel("MacLeish Weather Data 2015"),
+  titlePanel("Palmer Penguins"),
   
   sidebarLayout(
     
     sidebarPanel(
       
-      selectInput("station", "Select Weather Station:",
-                  choices = c("Whately", "Orchard")),
+      selectInput("species", "Select Species:",
+                  choices = c("All", "Adelie", "Chinstrap", "Gentoo")),
       
-      dateRangeInput("dates", "Select Date Range:",
-                     start = "2015-01-01",
-                     end = "2015-12-31",
-                     min = "2015-01-01",
-                     max = "2015-12-31"),
+      selectInput("sex", "Select Sex:",
+                  choices = c("All", "male", "female")),
       
-      selectInput("variable", "Select Weather Variable:",
-                  choices = c("temperature",
-                              "wind_speed",
-                              "rel_humidity",
-                              "pressure",
-                              "rainfall"))
+      selectInput("x", "X-axis:",
+                  choices = c("bill_length_mm", "bill_depth_mm",
+                              "flipper_length_mm", "body_mass_g")),
+      
+      selectInput("y", "Y-axis:",
+                  choices = c("bill_length_mm", "bill_depth_mm",
+                              "flipper_length_mm", "body_mass_g"),
+                  selected = "body_mass_g")
       
     ),
     
     mainPanel(
-      plotOutput("weatherPlot")
+      plotOutput("penguinPlot")
     )
     
   )
@@ -40,25 +37,21 @@ ui <- fluidPage(
 
 server <- function(input, output) {
   
-  output$weatherPlot <- renderPlot({
+  output$penguinPlot <- renderPlot({
     
-    if (input$station == "Whately") {
-      data <- whately_2015
-    } else {
-      data <- orchard_2015
+    data <- penguins
+    
+    if (input$species != "All") {
+      data <- data[data$species == input$species, ]
     }
     
-    data <- data[
-      as.Date(data$when) >= input$dates[1] &
-        as.Date(data$when) <= input$dates[2], ]
+    if (input$sex != "All") {
+      data <- data[!is.na(data$sex) & data$sex == input$sex, ]
+    }
     
-    ggplot(data, aes(x = when, y = .data[[input$variable]])) +
-      geom_line(color = "blue") +
-      labs(
-        title = paste(input$station, input$variable),
-        x = "Date",
-        y = input$variable
-      ) +
+    ggplot(data, aes(x = .data[[input$x]], y = .data[[input$y]])) +
+      geom_point(aes(color = species), size = 3) +
+      labs(x = input$x, y = input$y) +
       theme_minimal()
     
   })
